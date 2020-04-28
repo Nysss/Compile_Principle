@@ -1,0 +1,104 @@
+Program: ExtDefList					//program表示初始语法单元，表示整个程序
+
+ExtDefList: ExtDef ExtDefList 				//表示0个或多个ExtDef定义
+	| ε
+
+//表示一个全局变量、结构体或者函数的定义
+ExtDef: Specifier ExtDecList SEMI			//全局变量的定义
+	| Specifier SEMI				//结构体的定义
+	| Specifier FunDec CompSt			//函数的定义，CompsT表示函数体
+
+ExtDecList: VarDec							
+	| VarDec COMMA ExtDecList
+
+Specifier: TYPE					//int float char string
+	| StructSpecifier				//或者是结构体
+
+StructSpecifier: STRUCT OptTag LC DefList RC		//定义结构体的基本格式
+	| STRUCT Tag				//之前已经定义过结构体，现在可以直接使用结构体来定义变量
+
+OptTag: 	ID					//可有可无 
+	| ε
+
+Tag: ID
+
+VarDec: ID					//表示对一个变量或者数组的定义
+	| VarDec LB Locate RB
+
+Locate: INT
+
+FunDec: ID LP VarList RP				//表示对一个函数的函数头的定义
+	| ID LP RP					//VarList表示参数列表，也可以为空
+	
+VarList: ParamDec COMMA VarList			//ParamDec表示一个形参的定义
+	| ParamDec
+
+ParamDec: Specifier VarDec				//由类型 + 变量定义组成
+
+CompSt: LC DefList StmtList RC			//表示一个由一对花括号括起来的语句块，变量定义+一系列语句，即只允许在程序开头定义变量
+
+StmtList: Stmt StmtList				//每个stmt代表一条语句 
+	| ε
+
+Stmt: Exp SEMI					
+	| CompSt					//可以是一个语句块
+	| RETURN Exp SEMI				//或者返回值
+	| IF LP Exp RP Stmt				//IF语句
+	| IF LP Exp Rp Stmt ELSE Stmt			//IF-ELSE语句
+	| WHILE LP Exp RP Stmt			//WHILE语句
+	| FOR LP ForDec RP Stmt			//FOR语句
+	| BREAK SEMI
+	| CONTINUE SEMI
+
+ForDec: Exp SEMI Exp SEMI Exp
+
+DefList: Def DefList					//每个Def代表一条变量定义
+	| ε
+
+Def: Specifier DecList SEMI
+
+DecList: Dec 
+	| Dec COMMA DecList
+
+Dec: VarDec
+	| VarDec ASSIGNOP Exp			//可用于初始化
+
+Exp: Exp ASSIGNOP Exp
+	| Exp AND Exp
+	| Exp OR Exp
+	| Exp RELOP Exp
+	| Exp PLUS Exp
+	| Exp PLUS PLUS
+	| Exp MINUS MINUS 
+	| Exp PLUS ASSIGNOP Exp
+	| Exp MINUS ASSIGNOP Exp
+	| Exp MINUS Exp
+	| AUTO_MINUS Exp
+	| PLUS PLUS Exp
+	| Exp STAR Exp
+	| Exp STAR ASSIGNOP Exp
+	| Exp DIV Exp
+	| Exp DIV ASSIGNOP Exp
+	| LP Exp RP
+	| NEGATION Exp
+	| NOT Exp
+	| ID LP Args RP				//Args表示实参列表
+	| ID LP RP
+	| Exp LB Exp RB
+	| Exp DOT ID
+	| ID 
+	| INT
+	| FLOAT
+	| CHAR
+	| STRING  
+
+Args: Exp COMMA Args
+	| Exp
+
+
+## 编译流程
+flex lexer.l//生成lexer.yy.c
+bison -d -v parser.y//生成parser.tab.h, parser.tab.c 
+gcc ast.c parser.tab.c lex.yy.c -lfl -o parser
+./parser test.c
+ 
